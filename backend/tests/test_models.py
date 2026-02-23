@@ -1,4 +1,3 @@
-import pytest
 from app.models.document import Chunk, DocumentStatus, IngestResponse
 from app.models.financial import (
     Citation,
