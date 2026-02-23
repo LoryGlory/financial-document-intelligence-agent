@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from typing import Any, cast
 
 import chromadb
+from chromadb.api import ClientAPI
 from chromadb.api.types import Embeddings, Where
 
 from app.models.document import Chunk
@@ -19,7 +20,7 @@ class QueryResult:
 class VectorStore:
     def __init__(
         self,
-        client: chromadb.ClientAPI | None = None,
+        client: ClientAPI | None = None,
         persist_path: str = "./chroma_db",
     ) -> None:
         if client is not None:
