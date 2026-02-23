@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+dist/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+htmlcov/
+.coverage
+
+# ChromaDB
+chroma_db/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Next.js
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+
+# OS
+.DS_Store
