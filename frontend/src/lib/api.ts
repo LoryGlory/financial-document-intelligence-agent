@@ -1,7 +1,5 @@
 import type { ExtractionResponse, IngestResponse, QueryResponse } from "./types";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
-
 class ApiError extends Error {
   constructor(
     public status: number,
@@ -22,12 +20,12 @@ async function handleResponse<T>(res: Response): Promise<T> {
 export async function ingestDocument(file: File): Promise<IngestResponse> {
   const form = new FormData();
   form.append("file", file);
-  const res = await fetch(`${API_BASE}/ingest`, { method: "POST", body: form });
+  const res = await fetch("/api/ingest", { method: "POST", body: form });
   return handleResponse<IngestResponse>(res);
 }
 
 export async function queryDocument(documentId: string, question: string): Promise<QueryResponse> {
-  const res = await fetch(`${API_BASE}/query`, {
+  const res = await fetch("/api/query", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ document_id: documentId, question }),
@@ -36,7 +34,7 @@ export async function queryDocument(documentId: string, question: string): Promi
 }
 
 export async function extractMetrics(documentId: string): Promise<ExtractionResponse> {
-  const res = await fetch(`${API_BASE}/extract`, {
+  const res = await fetch("/api/extract", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ document_id: documentId }),
