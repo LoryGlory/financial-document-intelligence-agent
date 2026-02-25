@@ -1,0 +1,11 @@
+**/__pycache__/
+**/*.pyc
+backend/.venv/
+backend/chroma_db/
+backend/.env
+backend/coverage.xml
+backend/htmlcov/
+frontend/node_modules/
+frontend/.next/
+.git/
+docs/
