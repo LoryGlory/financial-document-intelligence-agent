@@ -1,0 +1,1 @@
+cd /Users/laura/vsc/financial-document-intelligence-agent/frontend && npx lint-staged
