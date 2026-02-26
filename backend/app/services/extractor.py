@@ -47,10 +47,14 @@ class Extractor:
         raw_chunks = self._store.get_all_chunks(document_id)
         sorted_chunks = sorted(raw_chunks, key=lambda c: c["metadata"].get("chunk_index", 0))
 
-        # Financial data lives in Item 7 (MD&A) and Item 8 (Financial Statements).
+        # Financial data lives in Item 7 (MD&A), Item 8 (Financial Statements),
+        # and the Notes to Consolidated Financial Statements.
         # Prioritise those sections so they are never cut off by the character limit.
-        FINANCIAL_KEYWORDS = ("item 7", "item 8", "md&a", "management", "financial statement",
-                              "results of operations", "revenue", "income", "earnings")
+        FINANCIAL_KEYWORDS = (
+            "item 7", "item 8", "md&a", "financial statement",
+            "results of operations", "revenue", "income", "earnings",
+            "notes to consolidated",
+        )
 
         def is_financial(chunk: dict[str, Any]) -> bool:
             title = str(chunk["metadata"].get("section_title", "")).lower()
@@ -61,7 +65,7 @@ class Extractor:
         ordered = financial_chunks + other_chunks
 
         document_text = "\n\n".join(c["text"] for c in ordered)
-        prompt = EXTRACTION_PROMPT.format(document_text=document_text[:150_000])
+        prompt = EXTRACTION_PROMPT.format(document_text=document_text[:200_000])
 
         message = self._client.messages.create(
             model=self._model,
@@ -72,8 +76,14 @@ class Extractor:
         block = message.content[0]
         raw_text = block.text if isinstance(block, TextBlock) else getattr(block, "text", "")
 
+        # Strip markdown code fences that Claude sometimes wraps around JSON
+        stripped = raw_text.strip()
+        if stripped.startswith("```"):
+            lines = stripped.splitlines()
+            stripped = "\n".join(lines[1:-1]).strip()
+
         try:
-            data = json.loads(raw_text)
+            data = json.loads(stripped)
             return ExtractionResponse(
                 document_id=document_id,
                 company_name=data.get("company_name"),
