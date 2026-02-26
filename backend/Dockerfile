@@ -1,11 +1,14 @@
-# Stage 1: install dependencies
+# Stage 1: install dependencies + pre-download ONNX model
 FROM python:3.12-slim AS builder
 
 WORKDIR /app
 COPY pyproject.toml .
-# Install the package and all dependencies
 RUN pip install --no-cache-dir --upgrade pip \
     && pip install --no-cache-dir -e "."
+
+# Bake the fastembed ONNX model into the image so there is no
+# download spike on first request (which would OOM on small instances)
+RUN python -c "from fastembed import TextEmbedding; TextEmbedding('BAAI/bge-small-en-v1.5')"
 
 # Stage 2: lean runtime image
 FROM python:3.12-slim AS runtime
@@ -15,6 +18,9 @@ WORKDIR /app
 # Copy installed packages from builder — no build tools in final image
 COPY --from=builder /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
 COPY --from=builder /usr/local/bin /usr/local/bin
+
+# Copy the pre-downloaded model cache
+COPY --from=builder /root/.cache/fastembed /root/.cache/fastembed
 
 # Copy application source
 COPY app/ ./app/
