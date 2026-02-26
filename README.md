@@ -1,8 +1,17 @@
-# Financial Document Intelligence Agent
-
-> RAG-powered Q&A for financial documents — upload a 10-K, extract key metrics as structured JSON, then ask natural language questions and get grounded answers with inline citations.
+<div align="center">
+  <img src="https://raw.githubusercontent.com/LoryGlory/financial-document-intelligence-agent/main/frontend/src/app/icon.svg" alt="Financial Document Intelligence logo" width="80" height="80" />
+  <h1>Financial Document Intelligence Agent</h1>
+  <p>by <a href="https://www.linkedin.com/in/laura-roganovic">Laura Roganovic</a></p>
+</div>
 
 [![CI](https://github.com/LoryGlory/financial-document-intelligence-agent/actions/workflows/ci.yml/badge.svg)](https://github.com/LoryGlory/financial-document-intelligence-agent/actions/workflows/ci.yml)
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=LoryGlory_financial-document-intelligence-agent&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=LoryGlory_financial-document-intelligence-agent)
+[![Coverage](https://sonarcloud.io/api/project_badges/measure?project=LoryGlory_financial-document-intelligence-agent&metric=coverage)](https://sonarcloud.io/summary/new_code?id=LoryGlory_financial-document-intelligence-agent)
+![Python](https://img.shields.io/badge/Python-3.12-blue?logo=python&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-0.115-green?logo=fastapi&logoColor=white)
+![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js&logoColor=white)
+
+RAG-powered Q&A for financial documents — upload a 10-K or earnings report, extract key metrics as structured JSON, then ask natural language questions and get grounded answers with inline citations.
 
 ---
 
@@ -80,7 +89,7 @@ git clone https://github.com/LoryGlory/financial-document-intelligence-agent.git
 cd financial-document-intelligence-agent
 
 # Set your Anthropic API key
-echo "ANTHROPIC_API_KEY=sk-ant-..." > .env
+echo "ANTHROPIC_API_KEY=sk-ant-..." > backend/.env
 
 # Start both services
 docker-compose up
@@ -111,28 +120,30 @@ API_URL=http://localhost:8000 npm run dev
 ### `POST /ingest`
 Upload a PDF for processing.
 ```bash
-curl -X POST http://localhost:8000/ingest   -F "file=@apple-10k-2024.pdf"
+curl -X POST http://localhost:8000/ingest -F "file=@alphabet-10k-2025.pdf"
 ```
 ```json
 {
   "document_id": "uuid",
-  "filename": "apple-10k-2024.pdf",
+  "filename": "alphabet-10k-2025.pdf",
   "status": "ready",
-  "chunks_count": 47,
-  "sections_found": ["Item 1. Business", "Item 1A. Risk Factors", "Item 7. MD&A"]
+  "chunks_count": 123,
+  "sections_found": ["ITEM 1. BUSINESS", "ITEM 7. MANAGEMENT'S DISCUSSION AND ANALYSIS", "ITEM 8. FINANCIAL STATEMENTS"]
 }
 ```
 
 ### `POST /query`
-Ask a question about an ingested document.
+Ask a natural language question about an ingested document.
 ```bash
-curl -X POST http://localhost:8000/query   -H "Content-Type: application/json"   -d '{"document_id": "uuid", "question": "What were the main revenue drivers?"}'
+curl -X POST http://localhost:8000/query \
+  -H "Content-Type: application/json" \
+  -d '{"document_id": "uuid", "question": "What were the main revenue drivers in 2025?"}'
 ```
 ```json
 {
-  "answer": "Revenue grew 8% driven by iPhone sales [1] and services growth [2].",
+  "answer": "Revenue grew 14% to $402.8B, driven by Google Search [1] and Google Cloud [2].",
   "citations": [
-    { "section_title": "MD&A", "excerpt": "iPhone revenue increased 6%...", "score": 0.91 }
+    { "section_title": "ITEM 7. MANAGEMENT'S DISCUSSION AND ANALYSIS", "excerpt": "Google Search & other revenues increased...", "score": 0.94 }
   ]
 }
 ```
@@ -140,17 +151,21 @@ curl -X POST http://localhost:8000/query   -H "Content-Type: application/json"  
 ### `POST /extract`
 Extract structured financial metrics.
 ```bash
-curl -X POST http://localhost:8000/extract   -H "Content-Type: application/json"   -d '{"document_id": "uuid"}'
+curl -X POST http://localhost:8000/extract \
+  -H "Content-Type: application/json" \
+  -d '{"document_id": "uuid"}'
 ```
 ```json
 {
-  "company_name": "Apple Inc.",
-  "fiscal_year": "2024",
+  "company_name": "Alphabet Inc.",
+  "fiscal_year": "2025",
   "filing_type": "10-K",
   "metrics": {
-    "revenue": { "value": 391.0, "unit": "USD_billions", "period": "FY2024" },
-    "eps": { "value": 6.11, "diluted": true },
-    "yoy_deltas": { "revenue": 2.0, "eps": 10.9 }
+    "revenue": { "value": 402836.0, "unit": "USD_millions", "period": "Year Ended December 31, 2025" },
+    "eps": { "value": 10.81, "diluted": true },
+    "net_income": { "value": 132170.0, "unit": "USD_millions" },
+    "gross_margin": { "value": 60.0 },
+    "yoy_deltas": { "revenue": 15.0, "eps": 34.0, "net_income": 32.0 }
   }
 }
 ```
