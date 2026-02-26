@@ -51,8 +51,14 @@ class Extractor:
         # and the Notes to Consolidated Financial Statements.
         # Prioritise those sections so they are never cut off by the character limit.
         FINANCIAL_KEYWORDS = (
-            "item 7", "item 8", "md&a", "financial statement",
-            "results of operations", "revenue", "income", "earnings",
+            "item 7",
+            "item 8",
+            "md&a",
+            "financial statement",
+            "results of operations",
+            "revenue",
+            "income",
+            "earnings",
             "notes to consolidated",
         )
 
