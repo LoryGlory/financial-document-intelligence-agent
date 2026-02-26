@@ -1,4 +1,5 @@
 import json
+from typing import Any
 
 import anthropic
 from anthropic.types import TextBlock
@@ -45,9 +46,22 @@ class Extractor:
     def extract(self, document_id: str) -> ExtractionResponse:
         raw_chunks = self._store.get_all_chunks(document_id)
         sorted_chunks = sorted(raw_chunks, key=lambda c: c["metadata"].get("chunk_index", 0))
-        document_text = "\n\n".join(c["text"] for c in sorted_chunks)
 
-        prompt = EXTRACTION_PROMPT.format(document_text=document_text[:50_000])
+        # Financial data lives in Item 7 (MD&A) and Item 8 (Financial Statements).
+        # Prioritise those sections so they are never cut off by the character limit.
+        FINANCIAL_KEYWORDS = ("item 7", "item 8", "md&a", "management", "financial statement",
+                              "results of operations", "revenue", "income", "earnings")
+
+        def is_financial(chunk: dict[str, Any]) -> bool:
+            title = str(chunk["metadata"].get("section_title", "")).lower()
+            return any(kw in title for kw in FINANCIAL_KEYWORDS)
+
+        financial_chunks = [c for c in sorted_chunks if is_financial(c)]
+        other_chunks = [c for c in sorted_chunks if not is_financial(c)]
+        ordered = financial_chunks + other_chunks
+
+        document_text = "\n\n".join(c["text"] for c in ordered)
+        prompt = EXTRACTION_PROMPT.format(document_text=document_text[:150_000])
 
         message = self._client.messages.create(
             model=self._model,
@@ -67,5 +81,5 @@ class Extractor:
                 filing_type=data.get("filing_type"),
                 metrics=FinancialMetrics(**data.get("metrics", {})),
             )
-        except (json.JSONDecodeError, TypeError, ValueError):
+        except (TypeError, ValueError):
             return ExtractionResponse(document_id=document_id)
