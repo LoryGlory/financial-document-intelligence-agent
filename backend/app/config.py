@@ -11,7 +11,7 @@ class Settings(BaseSettings):
 
     # Optional with sensible defaults
     chroma_persist_path: str = "./chroma_db"
-    embedding_model: str = "all-MiniLM-L6-v2"
+    embedding_model: str = "BAAI/bge-small-en-v1.5"
     claude_model: str = "claude-sonnet-4-6"
     top_k_chunks: int = 5
     max_chunk_tokens: int = 800
