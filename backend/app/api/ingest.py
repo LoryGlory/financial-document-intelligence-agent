@@ -15,7 +15,7 @@ router = APIRouter()
 
 
 @router.post("/ingest", response_model=IngestResponse)
-async def ingest_document(
+def ingest_document(
     file: UploadFile,
     embedder: Embedder = Depends(get_embedder),
     vector_store: VectorStore = Depends(get_vector_store),
@@ -27,7 +27,7 @@ async def ingest_document(
     document_id = str(uuid.uuid4())
 
     with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tmp:
-        contents = await file.read()
+        contents = file.file.read()
         tmp.write(contents)
         tmp_path = tmp.name
 
