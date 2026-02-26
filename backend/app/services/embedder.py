@@ -11,4 +11,4 @@ class Embedder:
 
     def embed_batch(self, texts: list[str]) -> list[list[float]]:
         """Embed multiple strings in one forward pass (faster than looping)."""
-        return [v.tolist() for v in self._model.embed(texts)]  # type: ignore[no-any-return]
+        return [v.tolist() for v in self._model.embed(texts)]
