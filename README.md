@@ -30,7 +30,7 @@
 │         │          └────────┬───────────┘                       │
 │  ┌──────▼───────┘           │                                   │
 │  │  Embedder    │    ┌──────▼───────┐    ┌──────────────────┐  │
-│  │ (MiniLM-L6)  │    │   ChromaDB   │    │  Anthropic SDK   │  │
+│  │ (bge-small)  │    │   ChromaDB   │    │  Anthropic SDK   │  │
 │  └──────────────┘    └──────────────┘    │  claude-sonnet-  │  │
 │                                          │  4-6             │  │
 │                                          └──────────────────┘  │
@@ -39,11 +39,11 @@
 
 ## Data Flow
 
-**Ingestion:** PDF upload → pdfplumber text extraction → SEC section header detection (Item 1, Item 1A, Item 7 MD&A…) → sub-chunking at ~800 tokens with 100-token overlap → MiniLM-L6 embeddings → ChromaDB
+**Ingestion:** PDF upload → pdfplumber text extraction → SEC section header detection (Item 1, Item 1A, Item 7 MD&A…) → sub-chunking at ~800 tokens with 100-token overlap → fastembed ONNX embeddings → ChromaDB
 
 **Query:** Question → embed → ChromaDB top-5 similarity search (scoped to document) → numbered context blocks → Claude generates grounded answer with `[N]` inline citations
 
-**Extract:** All chunks assembled in order → Claude + JSON schema prompt → typed `ExtractionResponse` (revenue, EPS, net income, gross margin, guidance, YoY deltas)
+**Extract:** Chunks sorted with financial sections first (Item 7, Item 8, Notes to Consolidated Financial Statements) → first 200k chars → Claude + JSON schema prompt → typed `ExtractionResponse` (revenue, EPS, net income, gross margin, guidance, YoY deltas)
 
 ---
 
@@ -52,7 +52,7 @@
 | Layer | Technology |
 |---|---|
 | LLM | Anthropic `claude-sonnet-4-6` |
-| Embeddings | `sentence-transformers` MiniLM-L6-v2 (local, no API cost) |
+| Embeddings | `fastembed` ONNX (BAAI/bge-small-en-v1.5, local, no API cost) |
 | Vector store | ChromaDB (persistent, in-process) |
 | PDF extraction | pdfplumber |
 | Backend | FastAPI + pydantic-settings |
@@ -60,7 +60,7 @@
 | Testing | pytest + pytest-mock + pytest-cov (>80% coverage) |
 | Linting | ruff + mypy (strict) |
 | CI/CD | GitHub Actions + SonarCloud |
-| Deployment | Railway (two services) |
+| Containerisation | Docker Compose (multi-stage builds, ONNX model baked in) |
 
 ---
 
@@ -86,7 +86,7 @@ echo "ANTHROPIC_API_KEY=sk-ant-..." > .env
 docker-compose up
 ```
 
-Frontend: http://localhost:3000  
+Frontend: http://localhost:3000
 Backend API docs: http://localhost:8000/docs
 
 ### Local dev without Docker
@@ -101,7 +101,7 @@ ANTHROPIC_API_KEY=sk-ant-... uvicorn app.main:app --reload
 # Frontend (separate terminal)
 cd frontend
 npm install
-NEXT_PUBLIC_API_URL=http://localhost:8000 npm run dev
+API_URL=http://localhost:8000 npm run dev
 ```
 
 ---
@@ -166,16 +166,3 @@ pytest tests/ --cov=app --cov-report=term-missing
 ```
 
 All Anthropic SDK and ChromaDB calls are mocked — tests never hit real APIs.
-
----
-
-## Deployment (Railway)
-
-1. Create a Railway project with two services: `backend` and `frontend`
-2. Set environment variables:
-   - Backend: `ANTHROPIC_API_KEY`, `CHROMA_PERSIST_PATH=/data/chroma`
-   - Frontend: `NEXT_PUBLIC_API_URL=https://<backend>.railway.app`
-3. Each service deploys from its subdirectory Dockerfile
-4. Add a Railway volume on the backend service mounted at `/data/chroma` for persistent vector storage
-
-Live demo: _coming soon_
